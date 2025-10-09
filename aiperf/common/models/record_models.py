@@ -35,6 +35,7 @@ class MetricResult(AIPerfBaseModel):
     max: int | float | None = None
     p1: float | None = None
     p5: float | None = None
+    p10: float | None = None
     p25: float | None = None
     p50: float | None = None
     p75: float | None = None

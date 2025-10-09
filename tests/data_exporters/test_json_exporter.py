@@ -29,6 +29,7 @@ class TestJsonExporter:
                 max=150.0 * NANOS_PER_MILLIS,
                 p1=101.0 * NANOS_PER_MILLIS,
                 p5=105.0 * NANOS_PER_MILLIS,
+                p10=108.0 * NANOS_PER_MILLIS,
                 p25=110.0 * NANOS_PER_MILLIS,
                 p50=120.0 * NANOS_PER_MILLIS,
                 p75=130.0 * NANOS_PER_MILLIS,
@@ -36,6 +37,7 @@ class TestJsonExporter:
                 p95=None,
                 p99=149.0 * NANOS_PER_MILLIS,
                 std=10.0 * NANOS_PER_MILLIS,
+                count=100,
             )
         ]
 
@@ -98,19 +100,53 @@ class TestJsonExporter:
             with open(expected_file) as f:
                 data = json.load(f)
 
-            assert "records" in data
-            records = data["records"]
-            assert isinstance(records, dict)
-            assert len(records) == 1
-            assert "ttft" in records
-            assert records["ttft"]["unit"] == "ms"
-            assert records["ttft"]["avg"] == 123.0
-            assert records["ttft"]["p1"] == 101.0
+            # Verify GenAI-Perf compatible structure: metrics at top level
+            assert "ttft" in data
+            ttft_metric = data["ttft"]
+            assert isinstance(ttft_metric, dict)
+            
+            # Verify metric has expected fields and values (converted to display units)
+            assert ttft_metric["unit"] == "ms"
+            assert ttft_metric["avg"] == 123.0
+            assert ttft_metric["min"] == 100.0
+            assert ttft_metric["max"] == 150.0
+            assert ttft_metric["p1"] == 101.0
+            assert ttft_metric["p5"] == 105.0
+            assert ttft_metric["p10"] == 108.0  # New p10 percentile
+            assert ttft_metric["p25"] == 110.0
+            assert ttft_metric["p50"] == 120.0
+            assert ttft_metric["p75"] == 130.0
+            assert ttft_metric["p90"] == 140.0
+            assert ttft_metric["p99"] == 149.0
+            assert ttft_metric["std"] == 10.0
+            
+            # Verify metric does NOT have tag, header, or count (GenAI-Perf format)
+            assert "tag" not in ttft_metric
+            assert "header" not in ttft_metric
+            assert "count" not in ttft_metric
 
+            # Verify input_config is present
             assert "input_config" in data
             assert isinstance(data["input_config"], dict)
-            # TODO: Uncomment this once we have expanded the output config to include all important fields
-            # assert "output" in data["input_config"]
-            # assert data["input_config"]["output"]["artifact_directory"] == str(
-            #     output_dir
-            # )
+
+            # Verify execution_metadata exists and contains expected fields
+            assert "execution_metadata" in data
+            execution_metadata = data["execution_metadata"]
+            assert isinstance(execution_metadata, dict)
+            assert "was_cancelled" in execution_metadata
+            assert execution_metadata["was_cancelled"] is False
+            assert "error_summary" in execution_metadata
+
+            # Verify ai_perf_v1 metadata contains tag, header, and count
+            assert "ai_perf_v1" in data
+            ai_perf_v1 = data["ai_perf_v1"]
+            assert isinstance(ai_perf_v1, dict)
+            assert "ttft" in ai_perf_v1
+            
+            ttft_metadata = ai_perf_v1["ttft"]
+            assert ttft_metadata["tag"] == "ttft"
+            assert ttft_metadata["header"] == "Time to First Token"
+            assert ttft_metadata["count"] == 100
+
+            # Verify old "records" structure is NOT present
+            assert "records" not in data
