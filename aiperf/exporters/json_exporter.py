@@ -158,7 +158,7 @@ class JsonExporter(AIPerfLoggerMixin):
         # Add input_config
         if self._input_config:
             export_dict["input_config"] = self._input_config.model_dump(
-                exclude_unset=True
+                mode='json', exclude_unset=True
             )
 
         # Add execution_metadata
