@@ -187,3 +187,117 @@ class JsonExporter(AIPerfLoggerMixin):
 
         async with aiofiles.open(self._file_path, "w") as f:
             await f.write(export_data_json)
+
+
+@DataExporterFactory.register(DataExporterType.GENAI_PERF_JSON)
+@implements_protocol(DataExporterProtocol)
+class GenAIPerfJsonExporter(AIPerfLoggerMixin):
+    """
+    A class to export summary metrics to a GenAI-Perf compatible JSON file.
+    
+    This exporter creates a small summary JSON file (~14KB) with metrics,
+    input_config, and execution_metadata, matching GenAI-Perf's output format.
+    """
+
+    def __init__(self, exporter_config: ExporterConfig, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.debug(lambda: f"Initializing GenAIPerfJsonExporter with config: {exporter_config}")
+        self._results = exporter_config.results
+        self._output_directory = exporter_config.user_config.output.artifact_directory
+        self._input_config = exporter_config.user_config
+        self._metric_registry = MetricRegistry
+        
+        # Use dynamic filename based on profile_export_file config with _genai_perf suffix
+        base_name = exporter_config.user_config.output.profile_export_file
+        self._file_path = self._output_directory / f"{base_name}_genai_perf.json"
+
+    def get_export_info(self) -> FileExportInfo:
+        return FileExportInfo(
+            export_type="GenAI-Perf JSON Export",
+            file_path=self._file_path,
+        )
+
+    def _should_export(self, metric: MetricResult) -> bool:
+        """Check if a metric should be exported."""
+        metric_class = MetricRegistry.get_class(metric.tag)
+        res = metric_class.missing_flags(
+            MetricFlags.EXPERIMENTAL | MetricFlags.INTERNAL
+        )
+        self.debug(lambda: f"Metric '{metric.tag}' should be exported: {res}")
+        return res
+
+    async def export(self) -> None:
+        self._output_directory.mkdir(parents=True, exist_ok=True)
+
+        start_time = (
+            datetime.fromtimestamp(self._results.start_ns / NANOS_PER_SECOND)
+            if self._results.start_ns
+            else None
+        )
+        end_time = (
+            datetime.fromtimestamp(self._results.end_ns / NANOS_PER_SECOND)
+            if self._results.end_ns
+            else None
+        )
+
+        converted_records: dict[MetricTagT, MetricResult] = {}
+        if self._results.records:
+            converted_records = convert_all_metrics_to_display_units(
+                self._results.records, self._metric_registry
+            )
+            converted_records = {
+                k: v for k, v in converted_records.items() if self._should_export(v)
+            }
+
+        # Build GenAI-Perf compatible structure (summary format)
+        export_dict: dict[str, Any] = {}
+
+        # Add individual metrics at top level (GenAI-Perf format)
+        for tag, metric_result in converted_records.items():
+            genai_metric = GenAIPerfMetric(
+                unit=metric_result.unit,
+                avg=metric_result.avg,
+                min=metric_result.min,
+                max=metric_result.max,
+                p1=metric_result.p1,
+                p5=metric_result.p5,
+                p10=metric_result.p10,
+                p25=metric_result.p25,
+                p50=metric_result.p50,
+                p75=metric_result.p75,
+                p90=metric_result.p90,
+                p95=metric_result.p95,
+                p99=metric_result.p99,
+                std=metric_result.std,
+            )
+            export_dict[tag] = genai_metric.model_dump(exclude_unset=True)
+
+        # Add input_config
+        if self._input_config:
+            export_dict["input_config"] = self._input_config.model_dump(
+                exclude_unset=True
+            )
+
+        # Add execution_metadata
+        execution_metadata = ExecutionMetadata(
+            was_cancelled=self._results.was_cancelled,
+            error_summary=self._results.error_summary,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        export_dict["execution_metadata"] = execution_metadata.model_dump(
+            exclude_unset=True
+        )
+
+        # Note: We do NOT add ai_perf_v1 metadata for GenAI-Perf compatibility
+
+        self.debug(lambda: f"Exporting data to GenAI-Perf JSON file")
+        # Use orjson for better control and to maintain order
+        import orjson
+
+        export_data_json = orjson.dumps(
+            export_dict, option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS
+        ).decode("utf-8")
+
+        async with aiofiles.open(self._file_path, "w") as f:
+            await f.write(export_data_json)

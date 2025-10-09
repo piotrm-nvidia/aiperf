@@ -42,9 +42,9 @@ class CsvExporter(AIPerfLoggerMixin):
         self._output_directory = exporter_config.user_config.output.artifact_directory
         self._metric_registry = MetricRegistry
         
-        # Use dynamic filename based on profile_export_file config with _aiperf suffix
+        # Use dynamic filename based on profile_export_file config with _genai_perf suffix
         base_name = exporter_config.user_config.output.profile_export_file
-        self._file_path = self._output_directory / f"{base_name}_aiperf.csv"
+        self._file_path = self._output_directory / f"{base_name}_genai_perf.csv"
         self._percentile_keys = _percentile_keys_from(STAT_KEYS)
 
     def get_export_info(self) -> FileExportInfo:

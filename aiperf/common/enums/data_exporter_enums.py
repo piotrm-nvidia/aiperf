@@ -14,3 +14,4 @@ class ConsoleExporterType(CaseInsensitiveStrEnum):
 class DataExporterType(CaseInsensitiveStrEnum):
     JSON = "json"
     CSV = "csv"
+    GENAI_PERF_JSON = "genai_perf_json"
