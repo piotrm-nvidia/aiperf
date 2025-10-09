@@ -65,6 +65,52 @@ class JsonExporter(AIPerfLoggerMixin):
         self.debug(lambda: f"Metric '{metric.tag}' should be exported: {res}")
         return res
 
+    def _inject_genai_perf_fields(self, export_data: dict):
+        tags_map_for_genai_perf = {
+            "ttft": "time_to_first_token",
+            "ttst": "time_to_second_token",
+        }
+
+        allowed_genai_perf_tags_full_stat_tags = {
+            "request_latency",
+            "time_to_first_token",
+            "time_to_second_token",
+            "inter_token_latency",
+            "output_token_throughput_per_user",
+            "output_sequence_length",
+            "input_sequence_length",
+        }
+
+        allowed_genai_perf_tags_avg_tags = {
+            "request_throughput",
+            "request_count",
+            "output_token_throughput",
+        }
+
+        # Add individual metrics at top level (GenAI-Perf format)
+        for tag, metric_result in export_data["records"].items():
+            if tag in tags_map_for_genai_perf:
+                mapped_tag = tags_map_for_genai_perf[tag]
+            else:
+                mapped_tag = tag
+            genai_metric = None
+            if mapped_tag in allowed_genai_perf_tags_full_stat_tags:
+                genai_metric = {}
+                for metric in metric_result:
+                    if metric in {"std", "unit", "avg", "min", "max"} or metric.startswith("p"):
+                        genai_metric[metric] = metric_result[metric]
+            elif mapped_tag in allowed_genai_perf_tags_avg_tags:
+                genai_metric = {}
+                for metric in metric_result:
+                    if metric in {"avg", "unit"}:
+                        genai_metric[metric] = metric_result[metric]
+
+            if genai_metric:
+                export_data[mapped_tag] = genai_metric
+
+
+
+
     async def export(self) -> None:
         self._output_directory.mkdir(parents=True, exist_ok=True)
 
@@ -97,7 +143,17 @@ class JsonExporter(AIPerfLoggerMixin):
             end_time=end_time,
         )
 
-        self.debug(lambda: f"Exporting data to JSON file: {export_data}")
         export_data_json = export_data.model_dump_json(indent=2, exclude_unset=True)
+
+        import json
+        import os
+        if os.getenv("AIPERF_GENAI_PERF_INJECT", "false") == "true":
+            export_data_dict = json.loads(export_data_json)
+            self._inject_genai_perf_fields(export_data_dict)
+            export_data_json = json.dumps(export_data_dict, indent=2)
+
+
+        self.debug(lambda: f"Exporting data to JSON file: {export_data}")
+        
         async with aiofiles.open(self._file_path, "w") as f:
             await f.write(export_data_json)
