@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 import aiofiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from aiperf.common.config import UserConfig
 from aiperf.common.config.config_defaults import OutputDefaults
@@ -26,19 +26,26 @@ class GenAIPerfMetric(BaseModel):
     """Metric in GenAI-Perf format (without tag, header, count)."""
 
     unit: str
-    avg: float | None = None
-    min: int | float | None = None
-    max: int | float | None = None
-    p1: float | None = None
-    p5: float | None = None
-    p10: float | None = None
-    p25: float | None = None
-    p50: float | None = None
-    p75: float | None = None
-    p90: float | None = None
-    p95: float | None = None
-    p99: float | None = None
-    std: float | None = None
+    avg: float | datetime | None = None
+    min: int | float | datetime | None = None
+    max: int | float | datetime | None = None
+    p1: float | datetime | None = None
+    p5: float | datetime | None = None
+    p10: float | datetime | None = None
+    p25: float | datetime | None = None
+    p50: float | datetime | None = None
+    p75: float | datetime | None = None
+    p90: float | datetime | None = None
+    p95: float | datetime | None = None
+    p99: float | datetime | None = None
+    std: float | datetime | None = None
+
+    @field_serializer('avg', 'min', 'max', 'p1', 'p5', 'p10', 'p25', 'p50', 'p75', 'p90', 'p95', 'p99', 'std')
+    def serialize_datetime(self, value: float | datetime | None) -> float | str | None:
+        """Serialize datetime values to ISO 8601 strings for JSON compatibility."""
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
 
 
 class AIPerfV1Metadata(BaseModel):
