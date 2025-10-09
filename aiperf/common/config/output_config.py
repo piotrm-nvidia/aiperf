@@ -32,3 +32,17 @@ class OutputConfig(BaseConfig):
             group=_CLI_GROUP,
         ),
     ] = OutputDefaults.ARTIFACT_DIRECTORY
+
+    profile_export_file: Annotated[
+        Path | None,
+        Field(
+            description="Base name for profile export files (without extension). "
+            "If not specified, will be auto-generated from model name, endpoint type, and concurrency.",
+        ),
+        CLIParameter(
+            name=(
+                "--profile-export-file",
+            ),
+            group=_CLI_GROUP,
+        ),
+    ] = OutputDefaults.PROFILE_EXPORT_FILE

@@ -83,9 +83,10 @@ class JsonExporter(AIPerfLoggerMixin):
         self._output_directory = exporter_config.user_config.output.artifact_directory
         self._input_config = exporter_config.user_config
         self._metric_registry = MetricRegistry
-        self._file_path = (
-            self._output_directory / OutputDefaults.PROFILE_EXPORT_AIPERF_JSON_FILE
-        )
+        
+        # Use dynamic filename based on profile_export_file config
+        base_name = exporter_config.user_config.output.profile_export_file
+        self._file_path = self._output_directory / f"{base_name}.json"
 
     def get_export_info(self) -> FileExportInfo:
         return FileExportInfo(

@@ -220,6 +220,9 @@ class UserConfig(BaseConfig):
         if "artifact_directory" not in self.output.model_fields_set:
             self.output.artifact_directory = self._compute_artifact_directory()
 
+        if "profile_export_file" not in self.output.model_fields_set or self.output.profile_export_file is None:
+            self.output.profile_export_file = self._compute_profile_export_file()
+
         return self
 
     def _compute_artifact_directory(self) -> Path:
@@ -273,6 +276,25 @@ class UserConfig(BaseConfig):
                 return "fixed_schedule"
             case _:
                 raise ValueError(f"Unknown timing mode '{self._timing_mode}'.")
+
+    def _compute_profile_export_file(self) -> Path:
+        """Compute profile export filename in GenAI-Perf format.
+        
+        Format: profile_export-{model}-{type}-{stimulus}
+        Example: profile_export-model-name-chat-concurrency512
+        """
+        parts = [
+            "profile_export",
+            self._get_artifact_model_name(),
+            self.endpoint.type.value,
+        ]
+        
+        # Add stimulus (concurrency or request_rate info)
+        stimulus = self._get_artifact_stimulus()
+        if stimulus:
+            parts.append(stimulus)
+        
+        return Path("-".join(parts))
 
     @property
     def timing_mode(self) -> TimingMode:

@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from aiperf.common.config import EndpointConfig, ServiceConfig, UserConfig
-from aiperf.common.config.config_defaults import OutputDefaults
 from aiperf.common.enums import EndpointType
 from aiperf.common.models import MetricResult
 from aiperf.exporters.csv_exporter import CsvExporter
@@ -147,7 +146,9 @@ async def test_csv_exporter_writes_two_sections_and_values(
         exporter = CsvExporter(cfg)
         await exporter.export()
 
-        expected = outdir / OutputDefaults.PROFILE_EXPORT_AIPERF_CSV_FILE
+        # File should use the computed profile_export_file name with _aiperf suffix
+        base_name = mock_user_config.output.profile_export_file
+        expected = outdir / f"{base_name}_aiperf.csv"
         assert expected.exists()
 
         text = _read(expected)
@@ -196,7 +197,9 @@ async def test_csv_exporter_empty_records_creates_empty_file(
         exporter = CsvExporter(cfg)
         await exporter.export()
 
-        expected = outdir / OutputDefaults.PROFILE_EXPORT_AIPERF_CSV_FILE
+        # File should use the computed profile_export_file name with _aiperf suffix
+        base_name = mock_user_config.output.profile_export_file
+        expected = outdir / f"{base_name}_aiperf.csv"
         assert expected.exists()
         content = _read(expected)
         assert content.strip() == ""
@@ -234,7 +237,10 @@ async def test_csv_exporter_deterministic_sort_order(
         exporter = CsvExporter(cfg)
         await exporter.export()
 
-        text = _read(outdir / OutputDefaults.PROFILE_EXPORT_AIPERF_CSV_FILE)
+        # File should use the computed profile_export_file name with _aiperf suffix
+        base_name = mock_user_config.output.profile_export_file
+        csv_file = outdir / f"{base_name}_aiperf.csv"
+        text = _read(csv_file)
 
         # Request section should list aaa_latency then zzz_latency in order
         # Pull only the request rows region (before the blank line separator).
@@ -289,7 +295,10 @@ async def test_csv_exporter_unit_aware_number_formatting(
         exporter = CsvExporter(cfg)
         await exporter.export()
 
-        text = _read(outdir / OutputDefaults.PROFILE_EXPORT_AIPERF_CSV_FILE)
+        # File should use the computed profile_export_file name with _aiperf suffix
+        base_name = mock_user_config.output.profile_export_file
+        csv_file = outdir / f"{base_name}_aiperf.csv"
+        text = _read(csv_file)
 
         # counts: integer
         assert re.search(r"Input Sequence Length \(tokens\),\s*4096\b", text)
