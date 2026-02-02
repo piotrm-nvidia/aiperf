@@ -715,6 +715,56 @@ class ImageResponseData(BaseResponseData):
     )
 
 
+class VideoDataItem(AIPerfBaseModel):
+    """Parsed video item response data."""
+
+    url: str | None = Field(
+        default=None,
+        description="The URL of the generated video.",
+    )
+    video_id: str | None = Field(
+        default=None,
+        description="The unique identifier for the generated video.",
+    )
+    duration: float | None = Field(
+        default=None,
+        description="The duration of the generated video in seconds.",
+    )
+    size: str | None = Field(
+        default=None,
+        description="The dimensions of the generated video (e.g., '1280x720').",
+    )
+    format: str | None = Field(
+        default=None,
+        description="The format/codec of the generated video (e.g., 'mp4').",
+    )
+    revised_prompt: str | None = Field(
+        default=None,
+        description="The revised prompt that was used for video generation.",
+    )
+    frames: int | None = Field(
+        default=None,
+        description="The number of frames in the generated video.",
+    )
+    fps: int | None = Field(
+        default=None,
+        description="The frames per second of the generated video.",
+    )
+
+
+class VideoResponseData(BaseResponseData):
+    """Parsed video response data."""
+
+    videos: list[VideoDataItem] = Field(
+        default_factory=list,
+        description="The generated videos from the response."
+    )
+    model: str | None = Field(
+        default=None,
+        description="The model used for video generation.",
+    )
+
+
 class ParsedResponse(AIPerfBaseModel):
     """Parsed response from a inference client."""
 

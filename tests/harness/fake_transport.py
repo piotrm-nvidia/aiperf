@@ -27,6 +27,7 @@ from aiperf_mock_server.app import (
     _build_nim_ranking_response_data,
     _build_solido_rag_response_data,
     _build_tgi_response_data,
+    _build_video_response_data,
     _compute_ranked_scores,
     _wait_for_processing,
 )
@@ -41,6 +42,7 @@ from aiperf_mock_server.models import (
     RankingRequest,
     SolidoRAGRequest,
     TGIGenerateRequest,
+    VideoGenerationRequest,
 )
 from aiperf_mock_server.utils import (
     RequestCtx,
@@ -340,6 +342,14 @@ class FakeTransport(BaseTransport):
                     ImageGenerationRequest,
                     self._do_simple,
                     build_response=_build_image_response_data,
+                )
+            case EndpointType.VIDEO_GENERATION:
+                return await self._dispatch(
+                    payload,
+                    endpoint_type,
+                    VideoGenerationRequest,
+                    self._do_simple,
+                    build_response=_build_video_response_data,
                 )
             case EndpointType.HUGGINGFACE_GENERATE:
                 return await self._dispatch(

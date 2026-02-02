@@ -233,6 +233,20 @@ endpoint:
       tokenizes_input: true
       metrics_title: Image Generation Metrics
 
+  video_generation:
+    class: aiperf.endpoints.openai_video_generation:VideoGenerationEndpoint
+    description: |
+      OpenAI Video Generation endpoint. Generates videos from text prompts using
+      models like Sora or SGLang video models. Supports streaming responses.
+      Uses /v1/videos path.
+    metadata:
+      endpoint_path: /v1/videos
+      supports_streaming: true
+      produces_tokens: false
+      produces_videos: true
+      tokenizes_input: true
+      metrics_title: Video Generation Metrics
+
   nim_embeddings:
     class: aiperf.endpoints.nim_embeddings:NIMEmbeddingsEndpoint
     description: |

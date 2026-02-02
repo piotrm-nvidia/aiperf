@@ -183,6 +183,20 @@ class ImageGenerationRequest(BaseModel):
     style: str | None = None
 
 
+class VideoGenerationRequest(BaseModel):
+    """Request model for OpenAI /v1/videos endpoint."""
+
+    prompt: str
+    model: str = "Wan-AI/Wan2.1-T2V-1.3B-Diffusers"
+    response_format: Literal["url", "b64_json"] = "url"
+    stream: bool = False
+    size: str | None = None
+    num_frames: int | None = None
+    fps: int | None = None
+    num_inference_steps: int | None = None
+    seed: int | None = None
+
+
 class SolidoRAGRequest(BaseModel):
     """Request model for SOLIDO /rag/api/prompt endpoint."""
 
@@ -209,5 +223,6 @@ RequestT = (
     | CohereRerankRequest
     | TGIGenerateRequest
     | ImageGenerationRequest
+    | VideoGenerationRequest
     | SolidoRAGRequest
 )

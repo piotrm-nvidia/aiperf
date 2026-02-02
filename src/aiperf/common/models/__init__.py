@@ -93,6 +93,8 @@ from aiperf.common.models.record_models import (
     TextResponse,
     TextResponseData,
     TokenCounts,
+    VideoDataItem,
+    VideoResponseData,
 )
 from aiperf.common.models.sequence_distribution import (
     DistributionParser,
@@ -264,6 +266,8 @@ __all__ = [
     "TurnMetadata",
     "Usage",
     "Video",
+    "VideoDataItem",
+    "VideoResponseData",
     "WorkerProcessingStats",
     "WorkerStats",
     "WorkerTaskStats",

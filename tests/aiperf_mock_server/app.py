@@ -47,6 +47,7 @@ from aiperf_mock_server.models import (
     RankingRequest,
     SolidoRAGRequest,
     TGIGenerateRequest,
+    VideoGenerationRequest,
 )
 from aiperf_mock_server.utils import (
     RequestCtx,
@@ -612,6 +613,44 @@ def _build_image_response_data(
         response_data["quality"] = req.quality
     if req.style:
         response_data["style"] = req.style
+
+    response_data["usage"] = ctx.usage
+    return response_data
+
+
+def _build_video_response_data(
+    ctx: RequestCtx, req: VideoGenerationRequest
+) -> dict[str, Any]:
+    """Build non-streaming video generation response."""
+    # Calculate video duration if frames and fps are provided
+    duration = None
+    if req.num_frames and req.fps:
+        duration = req.num_frames / req.fps
+    
+    video_id = f"video_{int(time.time())}_{hash(req.prompt) % 10000}"
+    
+    video_data: dict[str, Any] = {
+        "id": video_id,
+    }
+    
+    if req.response_format == "url":
+        video_data["url"] = f"https://mock.video.url/{video_id}.mp4"
+    
+    if req.size:
+        video_data["size"] = req.size
+    if duration:
+        video_data["duration"] = duration
+    if req.num_frames:
+        video_data["frames"] = req.num_frames
+    if req.fps:
+        video_data["fps"] = req.fps
+
+    response_data: dict[str, Any] = {
+        "id": video_id,
+        "model": req.model,
+        "created": int(time.time()),
+        "data": [video_data]
+    }
 
     response_data["usage"] = ctx.usage
     return response_data
