@@ -193,10 +193,9 @@ class AioHttpClient(AIPerfLoggerMixin):
                             ):
                                 AsyncSSEStreamReader.inspect_message_for_error(message)
                                 record.responses.append(message)
+                        record.end_perf_ns = time.perf_counter_ns()
                     else:
                         # Non-SSE response (e.g., JSON or binary)
-                        # Note: response.text()/read() should trigger aiohttp trace callbacks,
-                        # but we set response_receive_end_perf_ns explicitly for consistency
                         response_start_ns = time.perf_counter_ns()
 
                         # Check if content type is binary (video, image, audio, octet-stream)
@@ -211,13 +210,6 @@ class AioHttpClient(AIPerfLoggerMixin):
                         if is_binary:
                             raw_bytes = await response.read()
                             record.end_perf_ns = time.perf_counter_ns()
-                            if record.trace_data.response_receive_start_perf_ns is None:
-                                record.trace_data.response_receive_start_perf_ns = (
-                                    response_start_ns
-                                )
-                            record.trace_data.response_receive_end_perf_ns = (
-                                record.end_perf_ns
-                            )
                             record.responses.append(
                                 BinaryResponse(
                                     perf_ns=record.end_perf_ns,
@@ -228,13 +220,6 @@ class AioHttpClient(AIPerfLoggerMixin):
                         else:
                             raw_response = await response.text()
                             record.end_perf_ns = time.perf_counter_ns()
-                            if record.trace_data.response_receive_start_perf_ns is None:
-                                record.trace_data.response_receive_start_perf_ns = (
-                                    response_start_ns
-                                )
-                            record.trace_data.response_receive_end_perf_ns = (
-                                record.end_perf_ns
-                            )
                             record.responses.append(
                                 TextResponse(
                                     perf_ns=record.end_perf_ns,
@@ -242,7 +227,17 @@ class AioHttpClient(AIPerfLoggerMixin):
                                     text=raw_response,
                                 )
                             )
-                    record.end_perf_ns = time.perf_counter_ns()
+
+                        if record.trace_data.response_receive_start_perf_ns is None:
+                            record.trace_data.response_receive_start_perf_ns = (
+                                response_start_ns
+                            )
+                        # Note: response.text()/read() should trigger aiohttp trace callbacks,
+                        # but we set response_receive_end_perf_ns explicitly for consistency
+                        record.trace_data.response_receive_end_perf_ns = (
+                            record.end_perf_ns
+                        )
+
                     self.debug(
                         lambda: (
                             f"{method} request to {url} completed in {(record.end_perf_ns - record.start_perf_ns) / NANOS_PER_SECOND} seconds"

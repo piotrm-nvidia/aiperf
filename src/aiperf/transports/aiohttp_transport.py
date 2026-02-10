@@ -12,6 +12,7 @@ import aiohttp
 import orjson
 
 from aiperf.common.enums import ConnectionReuseStrategy, VideoJobStatus
+from aiperf.common.environment import Environment
 from aiperf.common.exceptions import NotInitializedError
 from aiperf.common.hooks import on_init, on_stop
 from aiperf.common.mixins import AIPerfLoggerMixin
@@ -22,6 +23,7 @@ from aiperf.common.models import (
     RequestRecord,
     TextResponse,
 )
+from aiperf.plugin import plugins
 from aiperf.plugin.enums import TransportType
 from aiperf.transports.aiohttp_client import AioHttpClient, create_tcp_connector
 from aiperf.transports.base_transports import (
@@ -191,8 +193,6 @@ class AioHttpTransport(BaseTransport):
             url = f"{base_url}/{path}"
         else:
             # Get endpoint path from endpoint metadata
-            from aiperf.plugin import plugins
-
             endpoint_metadata = plugins.get_endpoint_metadata(endpoint_info.type)
             endpoint_path = endpoint_metadata.endpoint_path
             if (
@@ -246,10 +246,11 @@ class AioHttpTransport(BaseTransport):
         # Capture lease_manager reference to avoid race with concurrent shutdown
         lease_manager = self.lease_manager
 
-        # Route video_generation to polling-based implementation
-        from aiperf.plugin.enums import EndpointType
-
-        if request_info.model_endpoint.endpoint.type == EndpointType.VIDEO_GENERATION:
+        # Route polling-based endpoints (e.g., video_generation) to polling implementation
+        endpoint_metadata = plugins.get_endpoint_metadata(
+            request_info.model_endpoint.endpoint.type
+        )
+        if endpoint_metadata.requires_polling:
             return await self._send_video_request_with_polling(request_info, payload)
 
         try:
@@ -500,8 +501,6 @@ class AioHttpTransport(BaseTransport):
         payload: dict[str, Any],
     ) -> RequestRecord:
         """Send video generation request and poll until complete."""
-        from aiperf.common.environment import Environment
-
         if self.aiohttp_client is None:
             raise NotInitializedError("AioHttpClient not initialized")
 
@@ -521,29 +520,25 @@ class AioHttpTransport(BaseTransport):
                 status=status,
             )
 
-        base_url = request_info.model_endpoint.endpoint.get_url(
-            request_info.url_index
-        ).rstrip("/")
-        if not base_url.startswith("http"):
-            base_url = f"http://{base_url}"
+        # Use build_url to respect custom endpoints and plugin metadata
+        submit_url = self.build_url(request_info)
 
         # Check if video download is enabled via --download-video-content
         download_content = request_info.model_endpoint.endpoint.download_video_content
 
         try:
             # Submit job
-            result = await self._submit_video_job(
-                f"{base_url}/v1/videos", payload, headers
-            )
+            result = await self._submit_video_job(submit_url, payload, headers)
             if isinstance(result, ErrorDetails):
                 return make_record(error=result)
             job_id, submit_response = result
             responses.append(submit_response)
 
-            # Poll for completion
+            # Poll for completion — derive poll URL from submit URL + job ID
+            poll_url = f"{submit_url.rstrip('/')}/{job_id}"
             poll_result = await self._poll_video_job(
                 job_id,
-                f"{base_url}/v1/videos/{job_id}",
+                poll_url,
                 headers,
                 timeout=request_info.model_endpoint.endpoint.timeout,
                 poll_interval=Environment.HTTP.VIDEO_POLL_INTERVAL,
@@ -562,9 +557,7 @@ class AioHttpTransport(BaseTransport):
 
             # Optional: download video content if requested
             if download_content:
-                content_url = (
-                    data.get("url") or f"{base_url}/v1/videos/{job_id}/content"
-                )
+                content_url = data.get("url") or f"{poll_url}/content"
                 download_result = await self._download_video_content(
                     job_id, content_url, headers
                 )
