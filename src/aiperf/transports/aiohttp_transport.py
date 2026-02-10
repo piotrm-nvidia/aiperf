@@ -514,7 +514,7 @@ class AioHttpTransport(BaseTransport):
 
         start_ns = time.perf_counter_ns()
         headers = self.build_headers(request_info)
-        responses: list[TextResponse] = []
+        responses: list[TextResponse | BinaryResponse] = []
 
         def make_record(
             error: ErrorDetails | None = None, status: int | None = None
