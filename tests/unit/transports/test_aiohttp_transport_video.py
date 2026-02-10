@@ -290,27 +290,23 @@ class TestVideoContentDownload:
     @pytest.mark.asyncio
     async def test_download_video_content_success(self, transport):
         """Test successful video content download."""
-        # Create a mock record with a BinaryResponse
         import time
 
         from aiperf.common.models import BinaryResponse
 
-        binary_response = BinaryResponse(
-            perf_ns=time.perf_counter_ns(), raw_bytes=b"fake_video_content"
-        )
-
+        perf_ns = time.perf_counter_ns()
         mock_record = RequestRecord(
             request_headers={},
-            start_perf_ns=time.perf_counter_ns(),
-            end_perf_ns=time.perf_counter_ns() + 1000000,
+            start_perf_ns=perf_ns,
+            end_perf_ns=perf_ns + 1000000,
             status=200,
-            body=b"fake_video_content",
-            response_headers={},
-            responses=[],  # We'll manually set this for binary content
-            error=None,
+            responses=[
+                BinaryResponse(
+                    perf_ns=perf_ns,
+                    raw_bytes=b"fake_video_content",
+                )
+            ],
         )
-        # Manually set the binary response (bypassing validation)
-        mock_record.responses = [binary_response]
 
         transport.aiohttp_client.get_request.return_value = mock_record
 
@@ -364,7 +360,6 @@ class TestVideoRequestWorkflow:
 
             submit_response = TextResponse(
                 perf_ns=time.perf_counter_ns(),
-                headers={},
                 text='{"id":"video-123","status":"queued"}',
             )
             download_response = BinaryResponse(
@@ -434,7 +429,6 @@ class TestVideoRequestWorkflow:
 
             submit_response = TextResponse(
                 perf_ns=time.perf_counter_ns(),
-                headers={},
                 text='{"id":"video-123","status":"queued"}',
             )
 

@@ -520,6 +520,7 @@ class AioHttpTransport(BaseTransport):
             error: ErrorDetails | None = None, status: int | None = None
         ) -> RequestRecord:
             return RequestRecord(
+                request_info=request_info,
                 request_headers=headers,
                 start_perf_ns=start_ns,
                 end_perf_ns=time.perf_counter_ns(),
