@@ -46,7 +46,7 @@ GPU telemetry collection configuration. Controls GPU metrics collection frequenc
 
 ## HTTP
 
-HTTP client socket and connection configuration. Controls low-level socket options, keepalive settings, DNS caching, and connection pooling for HTTP clients. These settings optimize performance for high-throughput streaming workloads. Video Generation Polling: For async video generation APIs that use job polling (e.g., SGLang /v1/videos), the poll interval is controlled by VIDEO_POLL_INTERVAL. The max poll time uses the --request-timeout-seconds CLI argument.
+HTTP client socket and connection configuration. Controls low-level socket options, keepalive settings, DNS caching, and connection pooling for HTTP clients. These settings optimize performance for high-throughput streaming workloads. Video Generation Polling: For async video generation APIs that use job polling (e.g., SGLang /v1/videos), the poll interval is controlled by AIPERF_HTTP_VIDEO_POLL_INTERVAL. The max poll time uses the --request-timeout-seconds CLI argument.
 
 | Environment Variable | Default | Constraints | Description |
 |----------------------|---------|-------------|-------------|

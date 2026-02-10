@@ -1006,7 +1006,7 @@ class RawRecordInfo(AIPerfBaseModel):
         default=None,
         description="The headers of the response.",
     )
-    responses: SerializeAsAny[list[SSEMessage | TextResponse]] = Field(
+    responses: SerializeAsAny[list[SSEMessage | TextResponse | BinaryResponse]] = Field(
         ...,
         description="The raw responses received from the request.",
     )

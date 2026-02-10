@@ -373,7 +373,15 @@ class AioHttpTransport(BaseTransport):
                 message=f"Unexpected response type from video {context}",
                 code=500,
             )
-        return orjson.loads(response.text), response
+        try:
+            return orjson.loads(response.text), response
+        except orjson.JSONDecodeError:
+            snippet = response.text[:200] if response.text else "<empty>"
+            return ErrorDetails(
+                type="VideoGenerationError",
+                message=f"Invalid JSON in video {context} response (status {record.status}): {snippet}",
+                code=500,
+            )
 
     async def _submit_video_job(
         self,
@@ -466,7 +474,7 @@ class AioHttpTransport(BaseTransport):
         """Download video content via GET /v1/videos/{id}/content.
 
         Returns video bytes on success, ErrorDetails on failure.
-        Not used in benchmark flow - provided for optional future use.
+        Used when --download-video-content is enabled.
         """
         if self.aiohttp_client is None:
             raise NotInitializedError("AioHttpClient not initialized")

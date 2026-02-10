@@ -187,7 +187,7 @@ class _HTTPSettings(BaseSettings):
 
     Video Generation Polling:
         For async video generation APIs that use job polling (e.g., SGLang /v1/videos),
-        the poll interval is controlled by VIDEO_POLL_INTERVAL. The max poll time uses
+        the poll interval is controlled by AIPERF_HTTP_VIDEO_POLL_INTERVAL. The max poll time uses
         the --request-timeout-seconds CLI argument.
     """
 

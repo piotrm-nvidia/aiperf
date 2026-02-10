@@ -448,7 +448,7 @@ If you see `Connection refused` errors:
 
 ### Timeout Errors
 
-If requests timeout during generation:
+If requests time out during generation:
 1. Increase the request timeout: `--request-timeout-seconds 1200`
 2. Check server logs for errors
 3. Reduce video resolution or duration for faster generation

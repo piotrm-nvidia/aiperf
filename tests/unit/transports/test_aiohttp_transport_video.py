@@ -33,11 +33,10 @@ def create_request_record(status: int = 200, body: str | bytes = "") -> RequestR
     if isinstance(body, bytes):
         response = TextResponse(
             perf_ns=perf_ns,
-            headers={},
             text="",  # Empty text for binary data
         )
     else:
-        response = TextResponse(perf_ns=perf_ns, headers={}, text=body)
+        response = TextResponse(perf_ns=perf_ns, text=body)
 
     return RequestRecord(
         request_headers={},
@@ -74,7 +73,6 @@ def create_video_model_endpoint_info():
             api_key=None,
             headers=[],
             connection_reuse_strategy=ConnectionReuseStrategy.POOLED,
-            # download_video_content=True,  # Remove this - it's not in EndpointInfo
         ),
     )
 
@@ -124,12 +122,15 @@ class TestVideoTransportParsing:
         assert isinstance(response, TextResponse)
 
     def test_parse_video_response_invalid_json(self, transport):
-        """Test video response parsing with invalid JSON."""
+        """Test video response parsing with invalid JSON returns ErrorDetails."""
         record = create_request_record(status=200, body="invalid json")
 
-        # Should raise JSONDecodeError for invalid JSON
-        with pytest.raises(orjson.JSONDecodeError):
-            transport._parse_video_response(record, "test")
+        result = transport._parse_video_response(record, "test")
+        assert isinstance(result, ErrorDetails)
+        assert result.type == "VideoGenerationError"
+        assert result.code == 500
+        assert "Invalid JSON" in result.message
+        assert "invalid json" in result.message
 
     def test_parse_video_response_error_status(self, transport):
         """Test video response parsing with error status."""
@@ -268,8 +269,8 @@ class TestVideoJobPolling:
         with patch(
             "aiperf.transports.aiohttp_transport.time.perf_counter_ns"
         ) as mock_time:
-            # Mock time progression to trigger timeout
-            mock_time.side_effect = [0, 61_000_000_000]  # 0s, then 61s (timeout is 60s)
+            # Mock time progression: poll_start=0, enter loop at 1s, enter loop at 2s, exceed timeout at 61s
+            mock_time.side_effect = [0, 1_000_000_000, 2_000_000_000, 61_000_000_000]
 
             result = await transport._poll_video_job(
                 "video-123",
@@ -295,7 +296,7 @@ class TestVideoContentDownload:
         from aiperf.common.models import BinaryResponse
 
         binary_response = BinaryResponse(
-            perf_ns=time.perf_counter_ns(), headers={}, raw_bytes=b"fake_video_content"
+            perf_ns=time.perf_counter_ns(), raw_bytes=b"fake_video_content"
         )
 
         mock_record = RequestRecord(
@@ -367,7 +368,7 @@ class TestVideoRequestWorkflow:
                 text='{"id":"video-123","status":"queued"}',
             )
             download_response = BinaryResponse(
-                perf_ns=time.perf_counter_ns(), headers={}, raw_bytes=b"fake_video_data"
+                perf_ns=time.perf_counter_ns(), raw_bytes=b"fake_video_data"
             )
 
             mock_submit.return_value = ("video-123", submit_response)

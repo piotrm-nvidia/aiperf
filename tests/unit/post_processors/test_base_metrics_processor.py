@@ -107,6 +107,7 @@ class TestBaseMetricsProcessor:
         expected_disallowed = (
             MetricFlags.SUPPORTS_AUDIO_ONLY
             | MetricFlags.SUPPORTS_IMAGE_ONLY
+            | MetricFlags.SUPPORTS_VIDEO_ONLY
             | MetricFlags.PRODUCES_VIDEO_ONLY
             | MetricFlags.STREAMING_ONLY
             | MetricFlags.GOODPUT
@@ -135,6 +136,7 @@ class TestBaseMetricsProcessor:
                 MetricFlags.ERROR_ONLY,
                 MetricFlags.SUPPORTS_AUDIO_ONLY
                 | MetricFlags.SUPPORTS_IMAGE_ONLY
+                | MetricFlags.SUPPORTS_VIDEO_ONLY
                 | MetricFlags.PRODUCES_VIDEO_ONLY
                 | MetricFlags.STREAMING_ONLY
                 | MetricFlags.GOODPUT,
@@ -146,6 +148,7 @@ class TestBaseMetricsProcessor:
                 MetricFlags.NONE,
                 MetricFlags.SUPPORTS_AUDIO_ONLY
                 | MetricFlags.SUPPORTS_IMAGE_ONLY
+                | MetricFlags.SUPPORTS_VIDEO_ONLY
                 | MetricFlags.PRODUCES_VIDEO_ONLY
                 | MetricFlags.STREAMING_ONLY
                 | MetricFlags.ERROR_ONLY
@@ -158,6 +161,7 @@ class TestBaseMetricsProcessor:
                 MetricFlags.ERROR_ONLY,
                 MetricFlags.SUPPORTS_AUDIO_ONLY
                 | MetricFlags.SUPPORTS_IMAGE_ONLY
+                | MetricFlags.SUPPORTS_VIDEO_ONLY
                 | MetricFlags.PRODUCES_VIDEO_ONLY
                 | MetricFlags.STREAMING_ONLY
                 | MetricFlags.GOODPUT,
@@ -232,6 +236,7 @@ class TestBaseMetricsProcessor:
             MetricFlags.NONE,
             MetricFlags.SUPPORTS_AUDIO_ONLY
             | MetricFlags.SUPPORTS_IMAGE_ONLY
+            | MetricFlags.SUPPORTS_VIDEO_ONLY
             | MetricFlags.PRODUCES_VIDEO_ONLY
             | MetricFlags.STREAMING_ONLY
             | MetricFlags.GOODPUT
